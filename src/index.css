@@ -1,0 +1,20 @@
+/* index.css — 
+
+body {
+  margin: 0;
+  /* El stack de fuentes San Francisco/Apple nativo */
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #F2F2F7; 
+  color: #1C1C1E; 
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Regla para la fuente Dark Academia que usaremos en el Objetivo */
+.dark-academia {
+  font-family: 'Cormorant Garamond', serif !important;
+  font-variant: small-caps;
+}

@@ -1,0 +1,50 @@
+.bubble {
+    position: fixed;
+    bottom: 50px;
+    right: 50px;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    
+    /* Eliminamos el border sólido definitivamente */
+    border: none;
+    
+    /* FONTO: Un azul muy tenue pero que cubra el centro */
+    background: rgba(0, 153, 255, 0.05);
+
+    /* LA MAGIA: 3 capas de sombras internas para difuminar el borde con gracia */
+    box-shadow: 
+        /* Capa 1: Un borde interno azul muy fino para definir la silueta */
+        inset 0 0 8px rgba(0, 153, 255, 0.4), 
+        /* Capa 2: Un resplandor blanco interno para el efecto cristal */
+        inset 5px 10px 20px rgba(255, 255, 255, 0.5),
+        /* Capa 3: Una sombra azul profunda abajo para dar peso */
+        inset -5px -10px 25px rgba(0, 80, 255, 0.2),
+        /* Capa 4: Sombra externa casi invisible para separar del fondo */
+        0 10px 20px rgba(0, 0, 0, 0.05);
+
+    backdrop-filter: blur(6px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: floating 5s ease-in-out infinite;
+}
+
+/* El brillo principal (la línea de luz) */
+.bubble::before {
+    content: "";
+    position: absolute;
+    top: 12%;
+    left: 15%;
+    width: 35%;
+    height: 20%;
+    background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0));
+    border-radius: 50%;
+    transform: rotate(-30deg);
+    filter: blur(1px); /* Muy poco blur para que defina la forma */
+}
+
+@keyframes floating {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}
