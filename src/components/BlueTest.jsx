@@ -1,72 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { arquetiposData } from "../lib/arquetiposData"; 
+import { t as theme } from "../theme"; 
 
-// ─────────────────────────────────────────────
-// COMPONENTE: RADARSIMPLE (Integrado para no tener errores de importación)
-// ─────────────────────────────────────────────
-const RadarSimple = ({ perfil }) => {
-  if (!perfil) return null;
-
-  const size = 300;
-  const center = size / 2;
-  const radius = 90;
-  
-  const labels = ["Estructural", "Reactiva", "Aplicada", "Estratégica", "Metacogn."];
-  // Convertimos la escala 1-5 a porcentaje (0-100)
-  const values = [
-    (perfil.E || 0) * 20, 
-    (perfil.R || 0) * 20, 
-    (perfil.A || 0) * 20, 
-    (perfil.St || 0) * 20, 
-    (perfil.M || 0) * 20
-  ];
-
-  const getPoint = (val, i) => {
-    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
-    const r = (val / 100) * radius;
-    return {
-      x: center + r * Math.cos(angle),
-      y: center + r * Math.sin(angle)
-    };
-  };
-
-  const points = values.map((v, i) => getPoint(v || 50, i));
-  const pathData = points.map(p => `${p.x},${p.y}`).join(' ');
-
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: "20px 0" }}>
-      <svg width={size} height={size}>
-        {[20, 40, 60, 80, 100].map(r => (
-          <circle key={r} cx={center} cy={center} r={(r / 100) * radius} fill="none" stroke="#E5E5EA" />
-        ))}
-        {labels.map((_, i) => {
-          const p = getPoint(100, i);
-          return <line key={i} x1={center} y1={center} x2={p.x} y2={p.y} stroke="#E5E5EA" />;
-        })}
-        <polygon points={pathData} fill="rgba(0, 122, 255, 0.2)" stroke="#007AFF" strokeWidth="2" strokeLinejoin="round" />
-        {labels.map((label, i) => {
-          const p = getPoint(115, i);
-          return (
-            <text key={i} x={p.x} y={p.y} textAnchor="middle" style={{ fontSize: 10, fontWeight: 700, fill: "#8E8E93" }}>
-              {label}
-            </text>
-          );
-        })}
-      </svg>
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────
-// DATOS DEL TEST (Psicometría intacta)
-// ─────────────────────────────────────────────
-const DIMENSIONES = {
-  E: "Estructural",
-  R: "Reactiva",
-  A: "Aplicada",
-  St: "Estratégica",
-  M: "Metacognitiva",
-};
+// ─────────────────────────────────────────────────────────────
+// CONFIGURACIÓN PSICOMÉTRICA (36 ÍTEMS)
+// ─────────────────────────────────────────────────────────────
+const DIMENSIONES = { E: "Estructural", R: "Reactiva", A: "Aplicada", St: "Estratégica", M: "Metacognitiva" };
 
 const PREGUNTAS_RAW = [
   { id: "E1", dim: "E", texto: "Antes de estudiar un tema nuevo, dedico tiempo a identificar su estructura general.", invertido: false },
@@ -75,28 +15,24 @@ const PREGUNTAS_RAW = [
   { id: "E4", dim: "E", texto: "Planifico con anticipación qué estudiaré, cuánto tiempo y en qué orden.", invertido: false },
   { id: "E5", dim: "E", texto: "Suelo comenzar a estudiar sin organizar previamente el material.", invertido: true },
   { id: "E6", dim: "E", texto: "Cuando el tema es difícil, me bloqueo intentando estructurarlo y termino estudiando sin orden.", invertido: true },
-  
   { id: "R1", dim: "R", texto: "Cuando hay una fecha límite cercana, mi rendimiento aumenta notablemente.", invertido: false },
   { id: "R2", dim: "R", texto: "Me resulta más fácil mantener el foco cuando los objetivos son concretos e inmediatos.", invertido: false },
   { id: "R3", dim: "R", texto: "Sin presión externa, tiendo a postergar o estudiar con menos intensidad.", invertido: false },
   { id: "R4", dim: "R", texto: "Una entrega próxima me genera la motivación necesaria para concentrarme.", invertido: false },
   { id: "R5", dim: "R", texto: "Mantengo el mismo nivel de estudio independientemente de si hay una evaluación próxima.", invertido: true },
   { id: "R6", dim: "R", texto: "Puedo trabajar con plena concentración en un tema aunque no tenga ninguna urgencia externa.", invertido: true },
-  
   { id: "A1", dim: "A", texto: "Aprendo mejor resolviendo ejercicios que leyendo explicaciones teóricas.", invertido: false },
   { id: "A2", dim: "A", texto: "Retengo la información con más facilidad cuando la aplico en situaciones reales o simuladas.", invertido: false },
   { id: "A3", dim: "A", texto: "Prefiero ver ejemplos concretos antes de estudiar la teoría formal de un concepto.", invertido: false },
   { id: "A4", dim: "A", texto: "Practicar activamente es imprescindible para que un tema me quede claro.", invertido: false },
   { id: "A5", dim: "A", texto: "Puedo comprender teoría compleja sin necesidad de aplicarla de inmediato.", invertido: true },
   { id: "A6", dim: "A", texto: "La teoría bien explicada me resulta suficiente para aprender, sin necesidad de ejemplos.", invertido: true },
-  
   { id: "St1", dim: "St", texto: "Necesito entender para qué sirve un tema antes de poder concentrarme en estudiarlo.", invertido: false },
   { id: "St2", dim: "St", texto: "Mi motivación aumenta cuando percibo que lo que estudio tendrá impacto en mi futuro.", invertido: false },
   { id: "St3", dim: "St", texto: "Integro información de varias fuentes para construir una comprensión global antes de profundizar.", invertido: false },
   { id: "St4", dim: "St", texto: "Organizo mentalmente el aprendizaje pensando en cómo lo usaré más adelante.", invertido: false },
   { id: "St5", dim: "St", texto: "Puedo estudiar con igual eficacia un tema aunque no le vea utilidad práctica ni futura.", invertido: true },
   { id: "St6", dim: "St", texto: "Me es indiferente conocer el propósito de un contenido para poder aprenderlo.", invertido: true },
-  
   { id: "M1", dim: "M", texto: "Mientras estudio, me doy cuenta cuando dejo de entender algo y cambio de estrategia.", invertido: false },
   { id: "M2", dim: "M", texto: "Evalúo regularmente si la forma en que estoy estudiando está siendo efectiva.", invertido: false },
   { id: "M3", dim: "M", texto: "Ajusto mi método de estudio según el tipo de materia o tarea que tengo.", invertido: false },
@@ -106,297 +42,283 @@ const PREGUNTAS_RAW = [
 ];
 
 const VALIDEZ = [
-  { id: "V1", dim: "V", texto: "Nunca me he distraído durante una clase o sesión de estudio.", invertido: false, trampa: true },
-  { id: "V2", dim: "V", texto: "Siempre cumplo con todas mis tareas antes de la fecha límite sin ninguna excepción.", invertido: false, trampa: true },
-  { id: "V3", dim: "V", texto: "Para esta pregunta, por favor selecciona «En desacuerdo» independientemente de tu opinión.", invertido: false, trampa: true },
+  { id: "V1", dim: "V", texto: "Nunca me he distraído ni un solo segundo durante una sesión de estudio." },
+  { id: "V2", dim: "V", texto: "Siempre cumplo mis tareas a tiempo, sin ninguna excepción en toda mi vida." },
+  { id: "V3", dim: "V", texto: "Para validar tu atención, por favor selecciona «En desacuerdo» en esta pregunta." },
 ];
 
 const PREGUNTAS_BIPOLAR = [
-  { id: "D1", textoA: "Prefiero dominar los elementos individuales antes de integrarlos en un todo.", textoB: "Prefiero entender el esquema completo antes de estudiar los componentes." },
-  { id: "D2", textoA: "Construyo mi comprensión acumulando detalles concretos progresivamente.", textoB: "Comprendo mejor cuando primero veo el panorama general completo." },
-  { id: "D3", textoA: "Me resulta natural ir de ejemplos específicos hacia conclusiones generales.", textoB: "Me resulta natural ir del concepto general hacia sus casos particulares." },
+  { id: "D1", textoA: "Prefiero dominar elementos individuales antes de integrarlos.", textoB: "Prefiero entender el esquema completo antes que los componentes." },
+  { id: "D2", textoA: "Construyo mi comprensión acumulando detalles progresivamente.", textoB: "Comprendo mejor cuando veo el panorama general primero." },
+  { id: "D3", textoA: "Voy de ejemplos específicos hacia conclusiones generales.", textoB: "Voy del concepto general hacia sus casos particulares." },
 ];
 
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+// ─────────────────────────────────────────────────────────────
+// COMPONENTE PRINCIPAL
+// ─────────────────────────────────────────────────────────────
+export default function BlueTest() {
+  const navigate = useNavigate();
+  const [estado, setEstado] = useState("inicio"); 
+  const [orden, setOrden] = useState([]);
+  const [idx, setIdx] = useState(0);
+  const [respuestas, setRespuestas] = useState({});
+  const [bipolarIdx, setBipolarIdx] = useState(0);
+  const [bipolarResp, setBipolarResp] = useState({});
+  const [resultado, setResultado] = useState(null);
 
-function buildOrden() {
-  const mezcladas = shuffle(PREGUNTAS_RAW);
-  const posiciones = shuffle([5, 12, 20, 28]).slice(0, 3);
-  posiciones.sort((a, b) => a - b);
-  const resultado = [...mezcladas];
-  posiciones.forEach((pos, i) => resultado.splice(pos, 0, VALIDEZ[i]));
-  return resultado;
-}
+  useEffect(() => {
+    const mezcladas = [...PREGUNTAS_RAW].sort(() => Math.random() - 0.5);
+    const final = [...mezcladas];
+    [8, 18, 28].forEach((pos, i) => final.splice(pos, 0, VALIDEZ[i]));
+    setOrden(final);
+  }, []);
 
-// ─────────────────────────────────────────────
-// CÁLCULO DEL PERFIL Y RECOMENDACIONES
-// ─────────────────────────────────────────────
-function calcularPerfil(respuestas, preguntasOrden, bipolar) {
-  const scores = { E: [], R: [], A: [], St: [], M: [] };
+  const responder = (val) => setRespuestas({ ...respuestas, [orden[idx].id]: val });
 
-  preguntasOrden.forEach((p) => {
-    if (p.dim === "V") return;
-    const val = respuestas[p.id];
-    if (val === undefined) return;
-    const score = p.invertido ? 6 - val : val;
-    scores[p.dim].push(score);
-  });
+  const finalizarAnalisis = (bipData) => {
+    const scores = { E: [], R: [], A: [], St: [], M: [] };
+    orden.forEach(p => {
+      const val = respuestas[p.id];
+      if (!val || p.dim === "V") return;
+      const score = p.invertido ? 6 - val : val;
+      scores[p.dim].push(score);
+    });
 
-  const perfil = {};
-  Object.keys(scores).forEach((dim) => {
-    const arr = scores[dim];
-    perfil[dim] = arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-  });
+    const fallosV = (respuestas["V1"] > 3 ? 1 : 0) + (respuestas["V2"] > 3 ? 1 : 0);
 
-  const dScores = PREGUNTAS_BIPOLAR.map((p) => bipolar[p.id] || 4);
-  perfil.D = dScores.reduce((a, b) => a + b, 0) / dScores.length;
-  perfil.D_label = perfil.D < 3.5 ? "Bottom-up" : perfil.D > 4.5 ? "Top-down" : "Flexible";
+    const perfilRadar = Object.keys(scores).map(dim => {
+      const arr = scores[dim];
+      const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+      return { id: dim, nombre: { E:"Estructural", R:"Reactiva", A:"Aplicada", St:"Estratégica", M:"Metacognitiva" }[dim], porcentaje: Math.round(avg * 20) };
+    }).sort((a, b) => b.porcentaje - a.porcentaje);
 
-  return perfil;
-}
+    const sumaBip = Object.values(bipData).reduce((a, b) => a + b, 0) / 3;
+    const tendencia = sumaBip < 3.5 ? "Bottom-up" : "Top-down";
 
-function getRecomendacion(perfil) {
-  const { E, R, A, St, M, D_label } = perfil;
-
-  if (M < 2.5 && R > 3.5 && E < 2.5 && St < 2.5) {
-    return {
-      arquetipo: "Perfil en Desarrollo", color: "#F59E0B", emoji: "🌱",
-      descripcion: "Tu aprendizaje depende mucho de la presión externa y aún estás construyendo hábitos de autorregulación.",
-      tecnicas: ["Busca un compañero de estudio", "Usa una agenda con bloques fijos", "Empieza con Pomodoros de 25 min", "Diario de reflexión de 3 min"]
-    };
-  }
-  if (E > 3.5 && St > 3.5) {
-    return {
-      arquetipo: "Arquitecto Cognitivo", color: "#007AFF", emoji: "🏛️",
-      descripcion: "Piensas en sistemas. Necesitas ver la estructura completa antes de llenarla de contenido.",
-      tecnicas: [D_label === "Top-down" ? "Lee primero el índice" : "Construye mapas desde conceptos", "Método Cornell", "Define un objetivo concreto", "Checks de 5 min"]
-    };
-  }
-  if (R > 3.5 && A > 3.5) {
-    return {
-      arquetipo: "Corredor de Fondo", color: "#FF3B30", emoji: "⚡",
-      descripcion: "Rindes mejor bajo presión y aprendiendo haciendo. Eres eficiente en sprints.",
-      tecnicas: ["Técnica Pomodoro estricta", "Crea deadlines artificiales", "Resuelve ejercicios primero", "Usa flashcards (Anki)"]
-    };
-  }
-  if (A > 3.5 && E > 3) {
-    return {
-      arquetipo: "Ingeniero del Conocimiento", color: "#34C759", emoji: "⚙️",
-      descripcion: "Aprendes construyendo. Los ejemplos y la práctica son tu lenguaje nativo.",
-      tecnicas: ["Empieza con un problema real", "Usa simulaciones", "¿En qué ejercicio usaría esto?", D_label === "Bottom-up" ? "Crea un glosario" : "Dibuja el diagrama general"]
-    };
-  }
-  if (St > 3.5 && R < 3) {
-    return {
-      arquetipo: "Pensador Estratégico", color: "#5856D6", emoji: "🔭",
-      descripcion: "Estudias mejor cuando ves el propósito claro. Te motiva el largo plazo.",
-      tecnicas: ["Escribe para qué sirve el tema", "Conecta materia con proyecto real", "Lee casos reales primero", "Crea hitos intermedios"]
-    };
-  }
-  if (M > 4) {
-    return {
-      arquetipo: "Aprendiz Adaptativo", color: "#32ADE6", emoji: "🧠",
-      descripcion: "Tu metacognición es tu superpoder. Eres capaz de ajustar tu propio método.",
-      tecnicas: ["Aplica modelo de Zimmerman", "Diario de aprendizaje", "Experimenta con espaciado", "Enseña lo que aprendes"]
-    };
-  }
-  return {
-    arquetipo: "Perfil Equilibrado", color: "#007AFF", emoji: "⚖️",
-    descripcion: "Tienes un perfil balanceado. Eres flexible cognitivamente, lo cual es una ventaja real.",
-    tecnicas: ["Experimenta con dos métodos distintos", "Pomodoro con revisión final", "Alterna lectura y problemas", "Registro de rendimiento"]
+    setResultado({
+      radar: perfilRadar,
+      principal: perfilRadar[0],
+      secundario: perfilRadar[1],
+      esHibrido: (perfilRadar[0].porcentaje - perfilRadar[1].porcentaje) < 15,
+      tendencia,
+      fallosV
+    });
+    setEstado("resultados");
   };
+
+  if (estado === "inicio") return <PantallaInicio onStart={() => setEstado("test")} />;
+  
+  if (estado === "test") return (
+    <Cuestionario 
+      q={orden[idx]} 
+      idx={idx} 
+      total={orden.length} 
+      valor={respuestas[orden[idx]?.id]}
+      onRes={responder} 
+      onNext={() => idx + 1 >= orden.length ? setEstado("bipolar") : setIdx(idx + 1)}
+      onPrev={() => setIdx(idx - 1)}
+    />
+  );
+
+  if (estado === "bipolar") return (
+    <CuestionarioBipolar 
+      q={PREGUNTAS_BIPOLAR[bipolarIdx]} 
+      idx={bipolarIdx}
+      valor={bipolarResp[PREGUNTAS_BIPOLAR[bipolarIdx].id]}
+      onRes={(v) => setBipolarResp({...bipolarResp, [PREGUNTAS_BIPOLAR[bipolarIdx].id]: v})}
+      onNext={() => bipolarIdx + 1 >= PREGUNTAS_BIPOLAR.length ? finalizarAnalisis(bipolarResp) : setBipolarIdx(bipolarIdx + 1)}
+    />
+  );
+
+  return <PantallaResultados data={resultado} />;
 }
 
-// ─────────────────────────────────────────────
-// COMPONENTES UI
-// ─────────────────────────────────────────────
-const styles = {
-  bg: "#F2F2F7", bgCard: "#FFFFFF", accent: "#007AFF", accentSoft: "#E5F0FF",
-  text: "#1C1C1E", textMuted: "#8E8E93", border: "#E5E5EA", shadow: "0 4px 12px rgba(0,0,0,0.05)"
-};
+// ─────────────────────────────────────────────────────────────
+// COMPONENTES DE INTERFAZ (ESTÉTICA MINIMALISTA iOS)
+// ─────────────────────────────────────────────────────────────
 
-function BarraProgreso({ actual, total }) {
-  const pct = Math.round((actual / total) * 100);
+function PantallaInicio({ onStart }) {
   return (
-    <div style={{ marginBottom: 40 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-        <span style={{ color: styles.textMuted, fontSize: 14, fontWeight: 600 }}>Pregunta {actual} de {total}</span>
-        <span style={{ color: styles.accent, fontSize: 14, fontWeight: 800 }}>{pct}%</span>
-      </div>
-      <div style={{ height: 8, background: styles.border, borderRadius: 10, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: styles.accent, borderRadius: 10, transition: "width 0.6s ease" }} />
+    <div style={containerStyle}>
+      <div style={{ ...cardStyle, maxWidth: 440, padding: "48px 40px" }}>
+        <div style={blueIconStyle}>
+          <img src="/assets/blue_logo.png" alt="Blue" style={{ width: 42 }} />
+        </div>
+        <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.5px", marginBottom: 12 }}>Hola, soy Blue.</h1>
+        <p style={{ color: theme.textMuted, fontSize: 16, lineHeight: 1.5, marginBottom: 40 }}>
+          Descubramos cómo procesas la información para optimizar tu próximo bloque de estudio.
+        </p>
+        <button onClick={onStart} style={btnPrincipal}>Empezar análisis</button>
       </div>
     </div>
   );
 }
 
-function BotoneEscala({ valor, onChange, tipo = "likert" }) {
-  if (tipo === "bipolar") {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
-        {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-          <button key={n} onClick={() => onChange(n)} style={{ width: 52, height: 52, borderRadius: "50%", border: valor === n ? "none" : `1px solid ${styles.border}`, background: valor === n ? styles.accent : styles.bgCard, color: valor === n ? "#fff" : styles.text, fontWeight: 700, fontSize: 18, cursor: "pointer", transition: "all 0.2s ease", boxShadow: valor === n ? "0 6px 16px rgba(0,122,255,0.3)" : "none" }}>{n}</button>
-        ))}
-      </div>
-    );
-  }
-
-  const etiquetas = ["", "Totalmente en desacuerdo", "En desacuerdo", "Neutral", "De acuerdo", "Totalmente de acuerdo"];
+function Cuestionario({ q, idx, total, valor, onRes, onNext, onPrev }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14 }}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button key={n} onClick={() => onChange(n)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "20px 10px", borderRadius: 20, border: valor === n ? `2px solid ${styles.accent}` : `1px solid ${styles.border}`, background: valor === n ? styles.accentSoft : styles.bgCard, color: valor === n ? styles.accent : styles.textMuted, cursor: "pointer", transition: "all 0.2s ease" }}>
-          <span style={{ fontSize: 28, fontWeight: 800, color: valor === n ? styles.accent : styles.text }}>{n}</span>
-          <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.2 }}>{etiquetas[n]}</span>
+    <div style={containerStyle}>
+      <div style={{ ...cardStyle, maxWidth: 540 }}>
+        <BarraProgreso actual={idx + 1} total={total} />
+        
+        <h2 style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.4, minHeight: 90, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 32, padding: "0 10px" }}>
+          {q?.texto}
+        </h2>
+
+        <EscalaLikert valor={valor} onChange={onRes} />
+
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 44, alignItems: "center" }}>
+          <button onClick={onPrev} disabled={idx === 0} style={btnGhost}>Atrás</button>
+          <button onClick={onNext} disabled={!valor} style={{ ...btnPrincipal, width: "auto", padding: "12px 36px", borderRadius: 14, fontSize: 15 }}>
+            {idx + 1 === total ? "Continuar" : "Siguiente"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CuestionarioBipolar({ q, idx, valor, onRes, onNext }) {
+  return (
+    <div style={containerStyle}>
+      <div style={{ ...cardStyle, maxWidth: 640 }}>
+        <p style={{ fontSize: 11, fontWeight: 800, color: theme.blue, letterSpacing: 2, marginBottom: 24, textTransform: "uppercase" }}>Tendencia Cognitiva</p>
+        <h2 style={{ fontSize: 19, fontWeight: 700, marginBottom: 40, lineHeight: 1.4 }}>¿Con qué estilo te sientes más cómoda?</h2>
+        
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, padding: "0 15px" }}>
+          <span style={bipolarTextStyle}>{q.textoA}</span>
+          <span style={{ ...bipolarTextStyle, textAlign: "right" }}>{q.textoB}</span>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+          {[1, 2, 3, 4, 5, 6, 7].map(n => (
+            <button key={n} onClick={() => onRes(n)} style={{
+              width: 44, height: 44, borderRadius: "50%", border: valor === n ? "none" : `1.5px solid ${theme.border}`,
+              background: valor === n ? theme.blue : "transparent", color: valor === n ? "#fff" : theme.text,
+              fontWeight: 700, fontSize: 15, cursor: "pointer", transition: "0.2s"
+            }}>{n}</button>
+          ))}
+        </div>
+
+        <button onClick={onNext} disabled={!valor} style={{ ...btnPrincipal, marginTop: 44 }}>Generar Perfil</button>
+      </div>
+    </div>
+  );
+}
+
+function PantallaResultados({ data }) {
+  const mapping = { E: "arquitecto", R: "corredor", A: "ingeniero", St: "estratega", M: "adaptativo" };
+  const p = arquetiposData[mapping[data.principal.id]];
+  const s = arquetiposData[mapping[data.secundario.id]];
+
+  return (
+    <div style={{ background: theme.bg, minHeight: "100vh", padding: "60px 20px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <p style={{ color: theme.blue, fontWeight: 800, letterSpacing: 3, fontSize: 11, marginBottom: 8 }}>IDENTIDAD COGNITIVA BLUE</p>
+          <h1 style={{ fontSize: 40, fontWeight: 900, letterSpacing: "-1px", margin: 0 }}>
+            {data.esHibrido ? `${p.titulo} + ${s.titulo}` : p.titulo}
+          </h1>
+          <p style={{ color: theme.textMuted, fontSize: 17, fontStyle: "italic", marginTop: 10 }}>Tendencia: <strong>{data.tendencia}</strong></p>
+        </div>
+
+        <div style={radarContainerStyle}>
+          <RadarGrafico dimensiones={data.radar} />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 24 }}>
+          <ResultCard title="⚡ Puntos Fuertes" list={p.ventajas} />
+          <ResultCard title="🧪 Hoja de Ruta" list={(data.esHibrido ? s : p).consejos} highlight />
+          <div style={resCardBase}>
+            <h4 style={hStyle}>🧠 Bases Pedagógicas</h4>
+            <p style={{ fontSize: 14, lineHeight: 1.6, color: theme.text }}>{p.baseCientifica}</p>
+            <div style={iaAnalisisBox}>
+              <p style={{ fontSize: 11, fontWeight: 900, color: theme.blue, marginBottom: 6 }}>BLUE AI INSIGHT</p>
+              <p style={{ fontSize: 13, margin: 0, fontStyle: "italic", lineHeight: 1.5 }}>{p.analisisIA}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// UI HELPERS (STYLING)
+// ─────────────────────────────────────────────────────────────
+
+function EscalaLikert({ valor, onChange }) {
+  const etiquetas = ["", "En desacuerdo", "Algo en desacuerdo", "Neutral", "Algo de acuerdo", "De acuerdo"];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+      {[1, 2, 3, 4, 5].map(n => (
+        <button key={n} onClick={() => onChange(n)} style={{
+          padding: "16px 4px", borderRadius: 14, border: valor === n ? `2px solid ${theme.blue}` : `1.5px solid ${theme.border}`,
+          background: valor === n ? "rgba(0, 122, 255, 0.05)" : "transparent", transition: "0.2s"
+        }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: valor === n ? theme.blue : theme.text }}>{n}</div>
+          <div style={{ fontSize: 9, fontWeight: 600, color: theme.textMuted, marginTop: 6, lineHeight: 1.1 }}>{etiquetas[n]}</div>
         </button>
       ))}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-// APP PRINCIPAL (BlueTest)
-// ─────────────────────────────────────────────
-export default function BlueTest() {
-  const navigate = useNavigate();
-  
-  const [pantalla, setPantalla] = useState("bienvenida");
-  const [preguntasOrden] = useState(() => buildOrden());
-  const [idx, setIdx] = useState(0);
-  const [respuestas, setRespuestas] = useState({});
-  const [bipolarIdx, setBipolarIdx] = useState(0);
-  const [bipolarResp, setBipolarResp] = useState({});
-  const [perfil, setPerfil] = useState(null);
-
-  const responder = (val) => setRespuestas({...respuestas, [preguntasOrden[idx].id]: val});
-  const siguiente = () => idx + 1 >= preguntasOrden.length ? setPantalla("bipolar") : setIdx(idx + 1);
-  const anterior = () => idx > 0 && setIdx(idx - 1);
-
-  const responderBipolar = (val) => setBipolarResp({...bipolarResp, [PREGUNTAS_BIPOLAR[bipolarIdx].id]: val});
-  const siguienteBipolar = () => {
-    if (bipolarIdx + 1 >= PREGUNTAS_BIPOLAR.length) {
-      setPantalla("cargando");
-      setTimeout(() => {
-        setPerfil(calcularPerfil(respuestas, preguntasOrden, bipolarResp));
-        setPantalla("resultados");
-      }, 2500);
-    } else {
-      setBipolarIdx(bipolarIdx + 1);
-    }
+function RadarGrafico({ dimensiones }) {
+  const size = 300; const center = size / 2; const radius = 90;
+  const getCoords = (idx, val) => {
+    const angle = (Math.PI * 2 * idx) / dimensiones.length - Math.PI / 2;
+    const r = (val / 100) * radius;
+    return { x: center + r * Math.cos(angle), y: center + r * Math.sin(angle) };
   };
+  const points = dimensiones.map((d, i) => getCoords(i, Math.max(d.porcentaje, 15)));
+  const path = points.map(p => `${p.x},${p.y}`).join(" ");
 
   return (
-    <div style={{
-      minHeight: "100vh", background: styles.bg,
-      display: "flex", flexDirection: "column",
-      alignItems: "center", padding: "32px 16px", 
-      fontFamily: "system-ui, -apple-system, sans-serif"
-    }}>
-      
-      {/* HEADER SUPERIOR */}
-      <div style={{ 
-        width: "100%", maxWidth: 560, 
-        display: "flex", alignItems: "center", justifyContent: "space-between", 
-        marginBottom: 40 
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <img src="/assets/blue_logo.png" alt="Blue Logo" style={{ width: 44, height: 44, objectFit: "contain", filter: "drop-shadow(0 4px 10px rgba(0,122,255,0.2))" }} />
-          <div>
-            <span style={{ color: styles.text, fontWeight: 800, fontSize: 24, display: "block", lineHeight: 1 }}>Blue</span>
-            <span style={{ color: styles.textMuted, fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Evaluación Cognitiva</span>
-          </div>
-        </div>
+    <svg width={size} height={size}>
+      {[20, 40, 60, 80, 100].map(r => (
+        <circle key={r} cx={center} cy={center} r={(r/100)*radius} fill="none" stroke={theme.border} />
+      ))}
+      {dimensiones.map((d, i) => {
+        const p = getCoords(i, 115);
+        return <text key={i} x={p.x} y={p.y} textAnchor="middle" style={{ fontSize: 9, fontWeight: 800, fill: theme.textMuted }}>{d.nombre.toUpperCase()}</text>;
+      })}
+      <polygon points={path} fill="rgba(0, 122, 255, 0.12)" stroke={theme.blue} strokeWidth="2" />
+    </svg>
+  );
+}
 
-        <button onClick={() => navigate("/")} style={{
-          background: styles.bgCard, border: `1px solid ${styles.border}`,
-          color: styles.textMuted, borderRadius: 8, padding: "8px 16px",
-          fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: styles.shadow,
-        }}>
-          ← Inicio
-        </button>
+function BarraProgreso({ actual, total }) {
+  const pct = (actual / total) * 100;
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontWeight: 800, color: theme.textMuted, marginBottom: 6 }}>
+        <span>SESIÓN DE ANÁLISIS</span><span>{Math.round(pct)}%</span>
       </div>
-
-      {/* CONTENEDOR CENTRAL */}
-      <div style={{ width: "100%", maxWidth: 560 }}>
-        
-        {pantalla === "bienvenida" && (
-          <div style={{ textAlign: "center", padding: "20px" }}>
-            <h2 style={{ fontSize: 32, fontWeight: 800, color: styles.text, marginBottom: 16 }}>Hola, Hellen</h2>
-            <p style={{ color: styles.textMuted, fontSize: 17, lineHeight: 1.6, marginBottom: 40 }}>Esta evaluación nos ayudará a ajustar tu sala de estudio para que sea lo más eficiente posible.</p>
-            <button onClick={() => setPantalla("test")} style={{ padding: "18px 48px", borderRadius: 20, background: styles.accent, color: "#fff", fontWeight: 700, fontSize: 17, border: "none", cursor: "pointer", boxShadow: "0 10px 20px rgba(0,122,255,0.3)" }}>Comenzar Test</button>
-          </div>
-        )}
-
-        {pantalla === "test" && (
-          <div>
-            <BarraProgreso actual={idx + 1} total={preguntasOrden.length} />
-            <div style={{ background: styles.bgCard, borderRadius: 28, padding: "40px 32px", marginBottom: 32, boxShadow: "0 10px 30px rgba(0,0,0,0.04)", border: `1px solid ${styles.border}` }}>
-              <span style={{ color: styles.accent, fontWeight: 800, fontSize: 12, textTransform: "uppercase", letterSpacing: 1, display: "block", marginBottom: 12 }}>{DIMENSIONES[preguntasOrden[idx].dim] || "Validación"}</span>
-              <p style={{ fontSize: 22, fontWeight: 600, color: styles.text, lineHeight: 1.4, margin: 0 }}>{preguntasOrden[idx].texto}</p>
-            </div>
-            <BotoneEscala valor={respuestas[preguntasOrden[idx].id]} onChange={responder} />
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 40 }}>
-              <button onClick={anterior} disabled={idx === 0} style={{ padding: "12px 24px", color: styles.textMuted, fontWeight: 700, background: "none", border: "none", cursor: "pointer" }}>← Atrás</button>
-              <button onClick={siguiente} disabled={!respuestas[preguntasOrden[idx].id]} style={{ padding: "16px 36px", borderRadius: 16, background: respuestas[preguntasOrden[idx].id] ? styles.accent : styles.border, color: "#fff", fontWeight: 700, border: "none", cursor: "pointer" }}>{idx + 1 >= preguntasOrden.length ? "Continuar" : "Siguiente"}</button>
-            </div>
-          </div>
-        )}
-
-        {pantalla === "bipolar" && (
-          <div style={{ animation: "fadeIn 0.4s ease" }}>
-             <h3 style={{ color: styles.textMuted, textAlign: "center", marginBottom: 30 }}>Preguntas de contraste ({bipolarIdx + 1}/3)</h3>
-             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, color: styles.text, fontWeight: 600, fontSize: 14 }}>
-               <span style={{ flex: 1, textAlign: "left", paddingRight: 10 }}>{PREGUNTAS_BIPOLAR[bipolarIdx].textoA}</span>
-               <span style={{ flex: 1, textAlign: "right", paddingLeft: 10 }}>{PREGUNTAS_BIPOLAR[bipolarIdx].textoB}</span>
-             </div>
-             <BotoneEscala valor={bipolarResp[PREGUNTAS_BIPOLAR[bipolarIdx].id]} onChange={responderBipolar} tipo="bipolar" />
-             <div style={{ display: "flex", justifyContent: "center", marginTop: 40 }}>
-               <button onClick={siguienteBipolar} disabled={!bipolarResp[PREGUNTAS_BIPOLAR[bipolarIdx].id]} style={{ padding: "16px 36px", borderRadius: 16, background: bipolarResp[PREGUNTAS_BIPOLAR[bipolarIdx].id] ? styles.accent : styles.border, color: "#fff", fontWeight: 700, border: "none", cursor: "pointer" }}>Continuar</button>
-             </div>
-          </div>
-        )}
-
-        {pantalla === "cargando" && (
-          <div style={{ textAlign: "center", padding: "60px 20px" }}>
-             <h2 style={{ fontSize: 24, color: styles.text, marginBottom: 10 }}>Analizando patrones...</h2>
-             <p style={{ color: styles.textMuted }}>Generando tu perfil metacognitivo</p>
-             <div style={{ marginTop: 30, fontSize: 40 }}>⚙️</div>
-          </div>
-        )}
-
-        {pantalla === "resultados" && perfil && (
-          <div style={{ animation: "fadeIn 0.5s ease" }}>
-             <div style={{ textAlign: "center", marginBottom: 30 }}>
-               <span style={{ fontSize: 40, display: "block", marginBottom: 10 }}>{getRecomendacion(perfil).emoji}</span>
-               <h2 style={{ fontSize: 28, fontWeight: 800, color: getRecomendacion(perfil).color }}>{getRecomendacion(perfil).arquetipo}</h2>
-               <p style={{ color: styles.textMuted }}>{getRecomendacion(perfil).descripcion}</p>
-             </div>
-
-             <div style={{ background: "#fff", padding: 30, borderRadius: 28, border: `1px solid ${styles.border}`, marginBottom: 20 }}>
-                <RadarSimple perfil={perfil} />
-             </div>
-
-             <div style={{ background: styles.bgCard, padding: 24, borderRadius: 24, border: `1px solid ${styles.border}` }}>
-               <h3 style={{ color: styles.text, fontSize: 16, marginBottom: 12 }}>Estrategia Recomendada:</h3>
-               <p style={{ color: styles.textMuted, fontSize: 14 }}>Tendencia: <strong>{perfil.D_label}</strong></p>
-               {/* AQUÍ ESTÁ LA MAGIA DEL ?. PARA QUE NO EXPLOTE */}
-               <ul style={{ color: styles.textMuted, fontSize: 14, paddingLeft: 20 }}>
-                 {getRecomendacion(perfil).tecnicas?.map((t, i) => <li key={i} style={{ marginBottom: 8 }}>{t}</li>)}
-               </ul>
-             </div>
-
-             <button onClick={() => window.location.reload()} style={{ width: "100%", marginTop: 30, padding: 20, borderRadius: 20, border: `1px solid ${styles.border}`, background: "#fff", fontWeight: 700, color: styles.textMuted, cursor: "pointer" }}>Repetir Test</button>
-          </div>
-        )}
-
+      <div style={{ height: 5, background: theme.border, borderRadius: 10, overflow: "hidden" }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: theme.blue, transition: "0.5s" }} />
       </div>
     </div>
   );
 }
+
+function ResultCard({ title, list, highlight }) {
+  return (
+    <div style={{ ...resCardBase, border: highlight ? `1px solid ${theme.blue}` : `1px solid ${theme.border}`, background: highlight ? "rgba(0, 122, 255, 0.02)" : "#fff" }}>
+      <h4 style={hStyle}>{title}</h4>
+      <ul style={ulStyle}>{list.map((item, i) => <li key={i}>{item}</li>)}</ul>
+    </div>
+  );
+}
+
+const containerStyle = { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: theme.bg, padding: 20 };
+const cardStyle = { width: "100%", background: "#fff", padding: "40px", borderRadius: 32, boxShadow: "0 15px 35px rgba(0,0,0,0.03)", border: `1px solid ${theme.border}`, textAlign: "center" };
+const blueIconStyle = { width: 70, height: 70, background: "rgba(0, 122, 255, 0.04)", borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 28px" };
+const btnPrincipal = { width: "100%", padding: "16px", borderRadius: 14, border: "none", background: "#1c1c1e", color: "#fff", fontWeight: 700, fontSize: 16, cursor: "pointer" };
+const btnGhost = { padding: 10, background: "none", border: "none", color: theme.textMuted, fontWeight: 700, cursor: "pointer", fontSize: 14 };
+const bipolarTextStyle = { flex: 1, fontSize: 13, fontWeight: 600, color: theme.text, lineHeight: 1.3 };
+const radarContainerStyle = { background: "#fff", padding: 32, borderRadius: 28, border: `1px solid ${theme.border}`, display: "flex", justifyContent: "center", marginBottom: 24 };
+const resCardBase = { background: "#fff", padding: 28, borderRadius: 24, border: `1px solid ${theme.border}` };
+const hStyle = { fontSize: 11, fontWeight: 900, letterSpacing: 2, marginBottom: 18, textTransform: "uppercase", color: theme.blue };
+const ulStyle = { paddingLeft: 18, fontSize: 14, color: theme.text, lineHeight: 1.7, margin: 0 };
+const iaAnalisisBox = { background: theme.bgMuted, padding: 18, borderRadius: 16, marginTop: 20 };

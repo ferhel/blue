@@ -3,49 +3,53 @@ import { t, font } from "../theme";
 
 // ─────────────────────────────────────────────────────────────
 // AudioConcentracion — Generador de ambiente sensorial Blue
-// Optimizado: Sin ruidos agudos, volumen seguro y diseño fluido.
+// Optimizado: Enlaces directos a Spotify + Ruido Marrón Nativo
 // ─────────────────────────────────────────────────────────────
 
 const MODOS = [
   {
-    id: "binaural_gamma",
-    label: "Gamma 40Hz",
-    descripcion: "Foco máximo",
-    emoji: "⚡",
+    id: "spotify_lofi",
+    label: "Lofi Focus",
+    descripcion: "Beats relajantes",
+    emoji: "☕",
     color: t.purple,
     colorSoft: t.purpleSoft,
-    freq: 200, diff: 40,
+    tipo: "link",
+    url: "https://open.spotify.com/album/34pF0wOGswprAZCsI8A1Fs?si=kzFoGAijSha38tZaSc04pQ",
   },
   {
-    id: "binaural_alpha",
-    label: "Alpha 10Hz",
-    descripcion: "Calma activa",
-    emoji: "🌊",
+    id: "spotify_agua",
+    label: "Sonidos de Agua",
+    descripcion: "Flujo natural",
+    emoji: "💧",
     color: t.blue,
     colorSoft: t.blueSoft,
-    freq: 200, diff: 10,
+    tipo: "link",
+    url: "https://open.spotify.com/playlist/1hgc3qXOdFOgVMzqfwODfP?si=E2N4x9M0TdaNFzL9eNkiTw",
   },
   {
-    id: "binaural_theta",
-    label: "Theta 6Hz",
-    descripcion: "Flow profundo",
-    emoji: "🌙",
+    id: "spotify_binaural",
+    label: "Ondas Binaurales",
+    descripcion: "Foco profundo",
+    emoji: "🎧",
     color: "#8B5CF6",
     colorSoft: t.purpleSoft,
-    freq: 200, diff: 6,
+    tipo: "link",
+    url: "https://open.spotify.com/playlist/37i9dQZF1DX2Ca9Q0E4D7d?si=_LWWdFe_SIeZEjuu22rI8A",
   },
   {
     id: "marron",
     label: "Ruido marrón",
-    descripcion: "Concentración",
+    descripcion: "Aislamiento total",
     emoji: "🌿",
     color: "#92400E",
     colorSoft: "#FEF3C7",
+    tipo: "generativo",
     noise: "brown",
   },
 ];
 
-// Generador de Ruido Marrón (Frecuencias graves y satisfactorias)
+// Generador de Ruido Marrón (Matemático puro)
 function crearRuido(ctx) {
   const bufferSize = ctx.sampleRate * 2;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -64,7 +68,6 @@ function crearRuido(ctx) {
 }
 
 export default function AudioConcentracion() {
-  // CONFIGURACIÓN INICIAL: Volumen al 10% (0.1) para evitar sobresaltos
   const [modoActivo,  setModoActivo]  = useState(null);
   const [volumen,     setVolumen]     = useState(0.1); 
   const [expandido,   setExpandido]   = useState(true);
@@ -73,6 +76,7 @@ export default function AudioConcentracion() {
   const nodesRef  = useRef([]);
   const gainRef   = useRef(null);
 
+  // Detiene cualquier audio nativo que esté sonando
   const detener = useCallback(() => {
     nodesRef.current.forEach(n => { try { n.stop(); } catch {} });
     nodesRef.current = [];
@@ -81,36 +85,26 @@ export default function AudioConcentracion() {
     setModoActivo(null);
   }, []);
 
+  // Maneja el clic en las tarjetas
   const iniciar = useCallback((modo) => {
-    detener();
-    const ctx = new AudioContext();
-    ctxRef.current = ctx;
-    const masterGain = ctx.createGain();
-    masterGain.gain.value = volumen;
-    masterGain.connect(ctx.destination);
-    gainRef.current = masterGain;
+    detener(); // Siempre silenciamos primero
+    setModoActivo(modo.id); // Marcamos la tarjeta como seleccionada visualmente
 
-    if (modo.noise) {
+    // Si es Ruido Marrón, encendemos el motor matemático
+    if (modo.tipo === "generativo") {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctxRef.current = ctx;
+      const masterGain = ctx.createGain();
+      masterGain.gain.value = volumen;
+      masterGain.connect(ctx.destination);
+      gainRef.current = masterGain;
+
       const src = crearRuido(ctx);
       src.connect(masterGain); 
       src.start();
       nodesRef.current = [src];
-    } else {
-      const merger = ctx.createChannelMerger(2);
-      merger.connect(masterGain);
-      [0, 1].forEach(ch => {
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain(); 
-        g.gain.value = 0.15;
-        osc.type = "sine";
-        osc.frequency.value = ch === 0 ? modo.freq : modo.freq + modo.diff;
-        osc.connect(g); 
-        g.connect(merger, 0, ch);
-        osc.start();
-        nodesRef.current.push(osc);
-      });
     }
-    setModoActivo(modo.id);
+    // Si es "link" (Spotify), no hacemos nada con el audio, solo actualizamos la UI
   }, [volumen, detener]);
 
   const cambiarVolumen = useCallback((v) => {
@@ -122,36 +116,24 @@ export default function AudioConcentracion() {
 
   return (
     <div style={{
-      background: t.bgCard, 
-      border: `1px solid ${t.border}`,
-      borderRadius: 20, 
-      padding: "24px", 
-      boxShadow: t.shadow, 
-      fontFamily: font, 
-      marginBottom: 16,
-      width: "100%", 
-      boxSizing: "border-box"
+      background: t.bgCard, border: `1px solid ${t.border}`, borderRadius: 20, 
+      padding: "24px", boxShadow: t.shadow, fontFamily: font, marginBottom: 16, width: "100%", boxSizing: "border-box"
     }}>
-      {/* Header Interactivo */}
-      <div 
-        onClick={() => setExpandido(e => !e)} 
-        style={{ display: "flex", alignItems: "center", gap: 14, cursor: "pointer" }}
-      >
+      
+      {/* HEADER COLAPSABLE */}
+      <div onClick={() => setExpandido(e => !e)} style={{ display: "flex", alignItems: "center", gap: 14, cursor: "pointer" }}>
         <div style={{
           width: 46, height: 46, borderRadius: 12,
           background: modoActivo ? (modoInfo?.colorSoft || t.blueSoft) : t.bgMuted,
           border: `1px solid ${modoActivo ? (modoInfo?.color || t.blue) : t.border}`,
-          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
-          transition: "all 0.3s ease"
+          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, transition: "all 0.3s ease"
         }}>
           {modoActivo ? modoInfo?.emoji : "🎧"}
         </div>
         <div style={{ flex: 1 }}>
-          <p style={{ color: t.text, fontWeight: 700, fontSize: 16, margin: 0 }}>
-            Audio de concentración
-          </p>
+          <p style={{ color: t.text, fontWeight: 700, fontSize: 16, margin: 0 }}>Audio de concentración</p>
           <p style={{ color: t.textMuted, fontSize: 13, margin: 0 }}>
-            {modoActivo ? `${modoInfo?.label} — activo` : "Elige un ambiente"}
+            
           </p>
         </div>
         <span style={{ color: t.textLight, fontSize: 14 }}>{expandido ? "▲" : "▼"}</span>
@@ -159,51 +141,23 @@ export default function AudioConcentracion() {
 
       {expandido && (
         <div style={{ marginTop: 24 }}>
-          {/* Aviso de Auriculares (Binaurales) */}
-          <div style={{
-            background: t.blueSoft, border: `1px solid ${t.blueMid}`,
-            borderRadius: 12, padding: "14px", marginBottom: 20,
-            display: "flex", gap: 12, alignItems: "flex-start",
-          }}>
-            <span style={{ fontSize: 18 }}>ℹ️</span>
-            <p style={{ color: t.textMuted, fontSize: 13, margin: 0, lineHeight: 1.5 }}>
-              Para las ondas binaurales usa <strong>auriculares</strong>.
-            </p>
-          </div>
-
-          {/* Grid de Modos (Layout 2 columnas que respira) */}
-          <div style={{ 
-            display: "grid", 
-            gridTemplateColumns: "1fr 1fr", 
-            gap: 12, 
-            marginBottom: 24 
-          }}>
+          
+          {/* GRID DE OPCIONES */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
             {MODOS.map(modo => (
               <button 
                 key={modo.id} 
                 onClick={() => modoActivo === modo.id ? detener() : iniciar(modo)}
                 style={{
-                  padding: "16px 14px", 
-                  borderRadius: 14, 
-                  textAlign: "left",
+                  padding: "16px 14px", borderRadius: 14, textAlign: "left",
                   background: modoActivo === modo.id ? modo.colorSoft : t.bgMuted,
                   border: `2px solid ${modoActivo === modo.id ? modo.color : t.border}`,
-                  cursor: "pointer", 
-                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                  display: "flex", 
-                  alignItems: "center", 
-                  gap: 12, 
-                  width: "100%"
+                  cursor: "pointer", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", display: "flex", alignItems: "center", gap: 12, width: "100%"
                 }}
               >
                 <span style={{ fontSize: 24 }}>{modo.emoji}</span>
                 <div style={{ flex: 1 }}>
-                  <p style={{ 
-                    color: modoActivo === modo.id ? modo.color : t.text, 
-                    fontWeight: 700, 
-                    fontSize: 13, 
-                    margin: 0 
-                  }}>
+                  <p style={{ color: modoActivo === modo.id ? modo.color : t.text, fontWeight: 700, fontSize: 13, margin: 0 }}>
                     {modo.label}
                   </p>
                 </div>
@@ -211,29 +165,48 @@ export default function AudioConcentracion() {
             ))}
           </div>
 
-          {/* Control de Volumen (Azul Blue Satisfactorio) */}
-          {modoActivo && (
+          {/* ZONA DE ACCIÓN: Botón Spotify */}
+          {modoActivo && modoInfo?.tipo === "link" && (
             <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: 14, 
-              padding: "12px 0",
-              animation: "slideIn 0.3s ease" 
+              marginTop: 16, padding: "16px", background: t.bgMuted, borderRadius: "16px", 
+              display: "flex", justifyContent: "space-between", alignItems: "center", animation: "slideIn 0.3s ease" 
             }}>
+              <div>
+                <p style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: t.text }}>Escuchar en Spotify</p>
+              </div>
+              <button
+                onClick={() => window.open(modoInfo.url, "_blank")}
+                style={{
+                  background: "#1DB954", // Verde clásico de Spotify
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "10px 20px",
+                  borderRadius: "20px",
+                  fontWeight: 700,
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 4px 12px rgba(29, 185, 84, 0.3)",
+                  transition: "transform 0.2s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.05)"}
+                onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
+              >
+                Abrir Playlist
+              </button>
+            </div>
+          )}
+
+          {/* ZONA DE ACCIÓN: Control de Volumen (Solo Ruido Marrón) */}
+          {modoActivo && modoInfo?.tipo === "generativo" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", animation: "slideIn 0.3s ease" }}>
               <span style={{ color: t.textMuted, fontSize: 12, minWidth: 65, fontWeight: 600 }}>VOLUMEN</span>
               <input 
-                type="range" 
-                min="0" 
-                max="1" 
-                step="0.05" 
-                value={volumen} 
+                type="range" min="0" max="1" step="0.05" value={volumen} 
                 onChange={e => cambiarVolumen(parseFloat(e.target.value))}
-                style={{ 
-                  flex: 1, 
-                  accentColor: t.blue, 
-                  cursor: "pointer",
-                  height: 6 
-                }} 
+                style={{ flex: 1, accentColor: t.blue, cursor: "pointer", height: 6 }} 
               />
               <span style={{ color: t.textMuted, fontSize: 13, minWidth: 35, textAlign: "right", fontWeight: 700 }}>
                 {Math.round(volumen * 100)}%
